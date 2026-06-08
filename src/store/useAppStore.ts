@@ -392,7 +392,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         logs.push(`Producción de ${a.product} reducida 10%`);
       }
       if (a.type === "create_po") {
-        get().createPO(a.product, a.qty, a.supplier);
+        get().createPO(a.product, a.qty, a.supplier, undefined, true);
         logs.push(`OC creada — ${a.qty || 10} u. ${a.product || ""}`);
       }
       if (a.type === "create_mo") {
@@ -403,8 +403,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         logs.push("Planificación actualizada según pronóstico");
       }
       if (a.type === "open_inventory") {
-        logs.push("Inventario marcado para revisión");
-        setTimeout(() => { window.location.href = "/inventario"; }, 800);
+        logs.push("Inventario revisado — sin redirección automática");
       }
     });
 

@@ -16,22 +16,42 @@ export type AgentWorkflowStep = {
   showInvoice?: boolean;
 };
 
-export const DEMO_TRIGGER_PATTERNS = [
-  /predic/i,
-  /pron[oó]stic/i,
-  /orden(es)?\s*(de\s*)?compra/i,
-  /compra(s)?\s*(para|del)\s*mes/i,
-  /roi/i,
-  /inventario.*compra/i,
-  /mes.*venta/i,
+export const JURY_DEMO_PROMPT =
+  "Haz una predicción simple para este mes de ventas y, de acuerdo a eso y según nuestro inventario, haz las órdenes de compra para este mes para mejorar el ROI.";
+
+/** Explicit phrases that start the full jury demo (pronóstico → inventario → finanzas → compras → factura). */
+const EXPLICIT_DEMO_PATTERNS = [
+  /demo\s*(del\s*)?jurado/i,
+  /demostraci[oó]n\s*(del\s*)?jurado/i,
+  /flujo\s*(agentico|completo|del\s*demo)/i,
+  /ejecuta(r)?\s*(el\s*)?demo/i,
+  /inicia(r)?\s*(el\s*)?demo/i,
+  /corre(r)?\s*(el\s*)?demo/i,
+  /presentaci[oó]n\s*(del\s*)?jurado/i,
 ];
 
+function normalizeDemoText(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** True when the message closely matches the canonical jury demo prompt. */
+function matchesJuryDemoPrompt(text: string): boolean {
+  const normalized = normalizeDemoText(text);
+  const jury = normalizeDemoText(JURY_DEMO_PROMPT);
+  const juryKeywords = ["prediccion", "mes", "ventas", "inventario", "ordenes", "compra", "roi"];
+  const matched = juryKeywords.filter((kw) => normalized.includes(kw)).length;
+  return matched >= 5 || normalized.includes(jury.slice(0, 60));
+}
+
 export function shouldRunDemoWorkflow(text: string): boolean {
-  const lower = text.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
-  const normalized = lower.replace(/[áéíóú]/g, (c) => ({ á: "a", é: "e", í: "i", ó: "o", ú: "u" }[c] || c));
-  const hits = DEMO_TRIGGER_PATTERNS.filter((p) => p.test(text)).length;
-  const voiceLike = /predic|pronostic/.test(normalized) && /compra|orden|inventario|roi|mes/.test(normalized);
-  return hits >= 2 || voiceLike || /predic.*compra|pronostic.*orden|mes.*compra.*roi/i.test(text);
+  if (EXPLICIT_DEMO_PATTERNS.some((p) => p.test(text))) return true;
+  return matchesJuryDemoPrompt(text);
 }
 
 export const FLOW_STAGES: { id: FlowPhase; label: string; icon: string; color: string }[] = [
@@ -185,6 +205,3 @@ export const AGENT_WORKFLOW: AgentWorkflowStep[] = [
     assistantMsg: "Proceso completado. Factura proforma enviada a **contabilidad@pattypasteleria.pe**. Ahorro merma proyectado: **S/ 2,847/mes**.",
   },
 ];
-
-export const JURY_DEMO_PROMPT =
-  "Haz una predicción simple para este mes de ventas y, de acuerdo a eso y según nuestro inventario, haz las órdenes de compra para este mes para mejorar el ROI.";

@@ -49,6 +49,7 @@ export function AgentChat() {
       content: fromVoice ? `${text} 🎤` : text,
     };
     addChatMessage(userMsg);
+    setChatOpen(true);
 
     if (shouldRunDemoWorkflow(text)) {
       setChatExpanded(true);
@@ -93,7 +94,7 @@ export function AgentChat() {
     } finally {
       setChatLoading(false);
     }
-  }, [chatLoading, workflowActive, addChatMessage, setChatExpanded, startWorkflow, setChatLoading, executeActions, product, forkast]);
+  }, [chatLoading, workflowActive, addChatMessage, setChatOpen, setChatExpanded, startWorkflow, setChatLoading, executeActions, product, forkast]);
 
   const { listening, supported, startListening, stopListening } = useSpeechInput((text) => {
     setInput(text);
