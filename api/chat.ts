@@ -2,6 +2,24 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 type ChatMessage = { role: "user" | "assistant" | "system"; content: string };
 
+function serverFallback(messages: ChatMessage[], context?: Record<string, unknown>): string {
+  const last = [...messages].reverse().find((m) => m.role === "user")?.content.toLowerCase() || "";
+  const product = String(context?.product || "Brownie");
+  const waste = Number(context?.wastePct ?? 10.7);
+  const daily = Number(context?.dailyProduction ?? 93);
+
+  if (/^(hola|buenas|hey)\b/.test(last)) {
+    return "¡Hola! Soy Foodie 🍽️, tu agente Smart Food. Puedo ayudarte con pronósticos, merma, inventario y órdenes de compra. ¿En qué te ayudo?";
+  }
+  if (/qu[eé]\s*puedes|ayuda|capacidades/.test(last)) {
+    return `Puedo ayudarte con pronósticos, merma (${product} al ${waste}%), inventario y órdenes de compra. Producción diaria actual: ${daily} unid.`;
+  }
+  if (/inventario|stock/.test(last)) {
+    return "Inventario: Harina 3 u. (bajo), Croissants 0 u. (agotado), Leche 22 u. (OK). 3 SKUs requieren reabastecimiento.";
+  }
+  return `Con los datos de Patty Pastelería (${product}, ${daily} unid/día, merma ${waste}%), puedo ayudarte en planificación, inventario o compras.`;
+}
+
 const MODELS = [
   "google/gemini-3-flash-preview",
   "google/gemini-2.5-flash",
@@ -66,15 +84,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const apiKey =
-    process.env.keynew ||
-    process.env.OPENROUTER_API_KEY ||
-    process.env.VITE_OPENROUTER_API_KEY;
-
-  if (!apiKey) {
-    return res.status(500).json({ error: "API key no configurada en Vercel (keynew)" });
-  }
-
   const { messages, context } = req.body as {
     messages: ChatMessage[];
     context?: Record<string, unknown>;
@@ -82,6 +91,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (!messages?.length) {
     return res.status(400).json({ error: "messages requerido" });
+  }
+
+  const apiKey =
+    process.env.keynew ||
+    process.env.OPENROUTER_API_KEY ||
+    process.env.VITE_OPENROUTER_API_KEY;
+
+  if (!apiKey) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    return res.status(200).json({ text: serverFallback(messages, context), actions: [], fallback: true });
   }
 
   const systemPrompt = `Eres Foodie 🍽️, agente operativo de Smart Food para Patty Pastelería (cafetería/restaurante en Perú).
@@ -110,9 +129,11 @@ Contexto actual: ${JSON.stringify(context || {})}`;
     }
 
     if (!content) {
-      return res.status(502).json({
-        error: "No pude conectar con ningún modelo de IA. Intenta de nuevo en unos segundos.",
-        details: errors.slice(0, 2).join(" | "),
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      return res.status(200).json({
+        text: serverFallback(messages, context),
+        actions: [],
+        fallback: true,
       });
     }
 
