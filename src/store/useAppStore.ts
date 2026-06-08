@@ -347,8 +347,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       highlightOrderId: ref,
     }));
     if (!skipRedirect) {
-      get().showToast(`OC ${ref} creada — redirigiendo a Compras`);
-      setTimeout(() => { window.location.href = "/compras"; }, 800);
+      get().showToast(`OC ${ref} creada — ver en Compras`);
     }
     return ref;
   },
@@ -402,9 +401,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (a.type === "adjust_gantt") {
         logs.push("Planificación actualizada según pronóstico");
       }
-      if (a.type === "open_inventory") {
-        logs.push("Inventario revisado — sin redirección automática");
-      }
+      // open_inventory intentionally ignored — navigation only during jury demo workflow
     });
 
     set({ forkast, ganttAdjusted, agentLog: [...get().agentLog, ...logs] });

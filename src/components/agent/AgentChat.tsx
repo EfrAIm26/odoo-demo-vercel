@@ -84,7 +84,10 @@ export function AgentChat() {
         actions: actions as import("@/types").AgentAction[],
       });
 
-      if (actions?.length) executeActions(actions as import("@/types").AgentAction[]);
+      const safeActions = (actions ?? []).filter(
+        (a) => a.type !== "open_inventory"
+      ) as import("@/types").AgentAction[];
+      if (safeActions.length) executeActions(safeActions);
     } catch (e) {
       addChatMessage({
         id: (Date.now() + 1).toString(),
