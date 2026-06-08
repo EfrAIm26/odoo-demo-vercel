@@ -5,8 +5,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,8 +22,8 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-      - name: Deploy to Vercel
-        if: ${{ secrets.VERCEL_TOKEN != '' }}
+      - name: Deploy to Vercel (requires repo secrets)
+        continue-on-error: true
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
