@@ -609,11 +609,15 @@ table.data tr:hover td { background: var(--sf-mint-soft); }
 
 .chat-msgs {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
 }
 
 .chat-msg {

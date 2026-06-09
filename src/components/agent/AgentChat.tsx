@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Send, X, Maximize2, Minimize2, Mic, MicOff } from "lucide-react";
 import { useAppStore, getForkastProduct } from "@/store/useAppStore";
 import { sendChatMessage } from "@/lib/api";
@@ -37,8 +37,31 @@ export function AgentChat() {
   const workflowActive = useAppStore((s) => s.workflowActive);
   const startWorkflow = useAppStore((s) => s.startWorkflow);
   const [input, setInput] = useState("");
+  const msgsRef = useRef<HTMLDivElement>(null);
 
   const product = getForkastProduct(forkast.productId);
+
+  const scrollChatToBottom = useCallback((smooth = true) => {
+    const el = msgsRef.current;
+    if (!el) return;
+    const run = () => {
+      el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+    };
+    run();
+    requestAnimationFrame(() => {
+      run();
+      requestAnimationFrame(run);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (chatOpen) scrollChatToBottom(false);
+  }, [chatOpen, scrollChatToBottom]);
+
+  useEffect(() => {
+    if (!chatOpen) return;
+    scrollChatToBottom(true);
+  }, [messages, chatLoading, workflowActive, chatOpen, scrollChatToBottom]);
 
   const processUserMessage = useCallback(async (text: string, fromVoice = false) => {
     if (!text || chatLoading || workflowActive) return;
@@ -132,7 +155,7 @@ export function AgentChat() {
         </div>
       </div>
 
-      <div className="chat-msgs">
+      <div className="chat-msgs" ref={msgsRef}>
         {messages.map((m) => (
           <div key={m.id} className={`chat-msg ${m.role}`}>
             {m.role === "assistant" ? (
