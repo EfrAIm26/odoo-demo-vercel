@@ -44,6 +44,14 @@ async function chatSend(text, replyWait = 4500) {
   await wait(500);
   await page.click(".chat-input-row .btn-primary");
   await wait(replyWait);
+  // Verificar que el chat scrolleó al último mensaje
+  const scrolled = await page.evaluate(() => {
+    const el = document.querySelector(".chat-msgs");
+    if (!el) return false;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  });
+  if (!scrolled) console.warn("  ⚠ scroll no al fondo tras:", text.slice(0, 40));
+  await wait(600);
 }
 
 async function navModule(label) {
@@ -178,7 +186,7 @@ await browser.close();
 
 if (video) {
   const src = await video.path();
-  const webm = `${OUT}/foodie-demo-completo.webm`;
+  const webm = `${OUT}/foodie-demo-completo-v2.webm`;
   await rename(src, webm);
   console.log(`\nVideo WebM: ${webm}`);
 }
